@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 
 ## Load all the data so we can quickly combine it and explore it. 
-pfile = 'linear_regression\python_modelBuilding\CinC.pickle'
-pfile_test = 'linear_regression\python_modelBuilding\CinC_test.pickle'
+pfile = './CinC.pickle'
+pfile_test = './CinC_test.pickle'
 processed_pfile = 'selected_CINC.pickle'
 processed_pfile_test = 'selected_CINC_test.pickle'
 CINCdat = pd.read_pickle(pfile)

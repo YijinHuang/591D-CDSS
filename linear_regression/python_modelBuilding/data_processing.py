@@ -4,6 +4,8 @@ import pandas as pd
 from sklearn.feature_selection import RFE
 
 
+severe_missing_values = ['BaseExcess', 'FiO2', 'pH', 'PaCO2', 'BUN', 'Calcium', 'Creatinine', 'Glucose', 'Magnesium', 'Potassium', 'Hct', 'Hgb', 'WBC', 'Platelets']
+
 def concat_features(df_feat, df):
     return pd.concat([df_feat, df], axis=1)
 
@@ -37,6 +39,16 @@ def add_cummin_features(df):
     df_cummin.columns = [str(col) + '_cummin' for col in df_cummin.columns]
     return df_cummin
 
+def add_log_features(df):
+    df_log = df.iloc[:,1:-3].transform(lambda s: np.log(s))
+    df_log.columns = [str(col) + '_log' for col in df_log.columns]
+    return df_log
+
+def add_missing_indicator_severe(df):
+    df_missing = 1 - df[severe_missing_values].isna().astype(int)
+    df_missing.columns = [str(col) + '_missing' for col in df_missing.columns]
+    return df_missing
+
 def add_rolling_mean_features(df, windows=5):
     df_roll = df.groupby('patient').transform(lambda s: s.rolling(windows, min_periods=1).mean()).iloc[:,1:-3]
     df_roll.columns = [str(col) + '_roll_mean' for col in df_roll.columns]
@@ -62,10 +74,15 @@ def add_rolling_var_features(df, windows=5):
     df_roll.columns = [str(col) + '_roll_var' for col in df_roll.columns]
     return df_roll
 
+def add_missing_indicator(df):
+    df_missing = 1 - df.iloc[:,1:-3].isna().astype(int)
+    df_missing.columns = [str(col) + '_missing' for col in df_missing.columns]
+    return df_missing
+
 
 ## Load all the data so we can quickly combine it and explore it. 
-pfile = 'linear_regression\python_modelBuilding\CinC.pickle'
-pfile_test = 'linear_regression\python_modelBuilding\CinC_test.pickle'
+pfile = './CinC.pickle'
+pfile_test = './CinC_test.pickle'
 if os.path.isfile(pfile):
   CINCdat = pd.read_pickle(pfile)
 else:
@@ -96,9 +113,9 @@ CINCdat_test.update(CINCdat_test.groupby('patient').ffill())
 # from sklearn.experimental import enable_iterative_imputer
 # from sklearn.impute import IterativeImputer
 # imputer = IterativeImputer(max_iter=10, random_state=0)
-# imputer.fit(CINCdat.iloc[:,0:-3])
-# CINCdat.iloc[:,0:-3] = imputer.transform(CINCdat.iloc[:,0:-3])
-# CINCdat_test.iloc[:,0:-3] = imputer.transform(CINCdat_test.iloc[:,0:-3])
+# imputer.fit(CINCdat.iloc[:,0:-2])
+# CINCdat.iloc[:,0:-2] = imputer.transform(CINCdat.iloc[:,0:-2])
+# CINCdat_test.iloc[:,0:-2] = imputer.transform(CINCdat_test.iloc[:,0:-2])
 
 ## Get reference ranges for variables using only non-sepsis patients as 'normal'
 CINCdat_NOsepsis = CINCdat[~CINCdat.patient.isin(np.unique(CINCdat.patient[CINCdat.SepsisLabel==1]))]
@@ -113,13 +130,12 @@ print('x_std = np.array(')
 print(np.array(sdCINCdat),')')
 
 ## Obtain the z-scores for all the variables
-CINCdat_zScores = CINCdat
-CINCdat_test_zScores = CINCdat_test
+CINCdat_zScores = CINCdat.copy()
+CINCdat_test_zScores = CINCdat_test.copy()
 cols = CINCdat_zScores.columns.drop(['patient','SepsisLabel','Sex'])
 for c in cols:
   CINCdat_zScores[c] = (CINCdat_zScores[c]-meanCINCdat[c])/sdCINCdat[c]
   CINCdat_test_zScores[c] = (CINCdat_test_zScores[c]-meanCINCdat[c])/sdCINCdat[c]
-
 
 ## Add features
 processed_CINCdat = CINCdat_zScores.copy()
@@ -153,14 +169,14 @@ processed_CINCdat.to_pickle('processed_CinC.pickle')
 processed_CINCdat_test.to_pickle('processed_CinC_test.pickle')
 
 ## feature selection
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFromModel
-lreg = LogisticRegression(random_state=0, max_iter=1000)
-selector = SelectFromModel(estimator=lreg).fit(processed_CINCdat.iloc[:, 0:-3], processed_CINCdat.SepsisLabel)
+estimator = RandomForestClassifier(n_estimators = 100, criterion="log_loss", max_depth=8, max_features="log2")
+selector = SelectFromModel(estimator=estimator).fit(processed_CINCdat.iloc[:, 0:-2], processed_CINCdat.SepsisLabel)
 idx = selector.get_support()
-selected_features = processed_CINCdat.columns[0:-3][idx]
-selected_CINCdat = pd.concat([processed_CINCdat[selected_features], processed_CINCdat.iloc[:,-3:]], axis=1)
-selected_CINCdat_test = pd.concat([processed_CINCdat_test[selected_features], processed_CINCdat_test.iloc[:,-3:]], axis=1)
+selected_features = processed_CINCdat.columns[0:-2][idx]
+selected_CINCdat = pd.concat([processed_CINCdat[selected_features], processed_CINCdat.iloc[:,-2:]], axis=1)
+selected_CINCdat_test = pd.concat([processed_CINCdat_test[selected_features], processed_CINCdat_test.iloc[:,-2:]], axis=1)
 print(selected_features)
 
 ## Save the data
