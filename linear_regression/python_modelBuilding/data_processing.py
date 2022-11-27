@@ -64,12 +64,12 @@ def add_rolling_var_features(df, windows=5):
 
 
 ## Load all the data so we can quickly combine it and explore it. 
-pfile = 'CinC.pickle'
-pfile_test = 'CinC_test.pickle'
+pfile = 'linear_regression\python_modelBuilding\CinC.pickle'
+pfile_test = 'linear_regression\python_modelBuilding\CinC_test.pickle'
 if os.path.isfile(pfile):
   CINCdat = pd.read_pickle(pfile)
 else:
-  os.chdir("../training_2022-11-13")
+  os.chdir("linear_regression/training_2022-11-13")
   extension = 'csv'
   all_filenames = [i for i in glob.glob('*.{}'.format(extension))]
   CINCdat = pd.concat([pd.read_csv(f).assign(patient=os.path.basename(f).split('.')[0]) for f in all_filenames ])
