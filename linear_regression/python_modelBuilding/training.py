@@ -7,7 +7,7 @@ import pandas as pd
 pfile = 'linear_regression\python_modelBuilding\CinC.pickle'
 pfile_test = 'linear_regression\python_modelBuilding\CinC_test.pickle'
 processed_pfile = 'selected_CINC.pickle'
-processed_pfile_test = 'selected_CINC.pickle'
+processed_pfile_test = 'selected_CINC_test.pickle'
 CINCdat = pd.read_pickle(pfile)
 CINCdat_test = pd.read_pickle(pfile_test)
 CINCdat_zScores = pd.read_pickle(processed_pfile)
@@ -17,7 +17,7 @@ CINCdat_test_zScores = pd.read_pickle(processed_pfile_test)
 ## Build a logistic regression using all the training data
 from sklearn.ensemble import RandomForestClassifier
 # lreg = LogisticRegression(random_state=0, max_iter=1000)
-randomForest = RandomForestClassifier(n_estimators = 80)
+randomForest = RandomForestClassifier(n_estimators = 100, criterion="log_loss", max_depth=8, max_features="log2")
 data = CINCdat_zScores.loc[:, ~CINCdat_zScores.columns.isin(['SepsisLabel', 'patient']) ]
 testData = CINCdat_test_zScores.loc[:, ~CINCdat_test_zScores.columns.isin(['SepsisLabel', 'patient']) ]
 testLabels = CINCdat_test_zScores.SepsisLabel
@@ -45,14 +45,17 @@ thresh=round(thresholds[np.argmax(tpr - fpr)],4)
 print('Threshold:',thresh)
 
 # Quick calculation of utility score
-# CINCdat = CINCdat.assign(SepsisLabelLR = (CINCdat_zScores.probSepsisLR>thresh).astype(int))
-# CINCdat_test= CINCdat_test.assign(SepsisLabelLR = (CINCdat_test_zScores.probSepsisLR>thresh).astype(int))
+print("assign train labels")
+CINCdat = CINCdat.assign(SepsisLabelLR = (CINCdat_zScores.probSepsisLR>thresh).astype(int))
+print("assign test labels")
+CINCdat_test= CINCdat_test.assign(SepsisLabelLR = (CINCdat_test_zScores.probSepsisLR>thresh).astype(int))
 
-# import evaluate_sepsis_score as ev
-# util = ev.evaluate_utility(CINCdat.patient,np.array(CINCdat_zScores.SepsisLabel),np.array(CINCdat.SepsisLabelLR))
-# print(util) # 0.31570760013441407
-# util_test = ev.evaluate_utility(CINCdat_test.patient,np.array(CINCdat_test_zScores.SepsisLabel),np.array(CINCdat_test.SepsisLabelLR))
-# print(util_test) # 0.38775047041755845
+print('evaluating')
+import evaluate_sepsis_score as ev
+util = ev.evaluate_utility(CINCdat.patient,np.array(CINCdat_zScores.SepsisLabel),np.array(CINCdat.SepsisLabelLR))
+print(util) # 0.31570760013441407
+util_test = ev.evaluate_utility(CINCdat_test.patient,np.array(CINCdat_test_zScores.SepsisLabel),np.array(CINCdat_test.SepsisLabelLR))
+print(util_test) # 0.38775047041755845
 
 #### OPTION 2: BOOSTED TREE #####
 ## Build a LightGBM model using all the training data
