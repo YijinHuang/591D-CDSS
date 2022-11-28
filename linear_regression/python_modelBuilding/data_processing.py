@@ -181,37 +181,38 @@ processed_CINCdat_test = processed_CINCdat_test.replace([np.inf, -np.inf], 0)
 processed_CINCdat.to_pickle('processed_CinC.pickle')
 processed_CINCdat_test.to_pickle('processed_CinC_test.pickle')
 
-# selected_features = ['HR_cummin', 'O2Sat_cummin', 'SBP_cummin', 'MAP_cummin', 'pH_cummin',
-#     'Calcium_cummin', 'WBC_cummin', 'Platelets_cummin', 'HR_cummax',
-#     'Temp_cummax', 'DBP_cummax', 'Resp_cummax', 'FiO2_cummax', 'pH_cummax',
-#     'BUN_cummax', 'Calcium_cummax', 'Creatinine_cummax', 'WBC_cummax',
-#     'Platelets_cummax', 'ICULOS_shift_1', 'HR_shift_1', 'Temp_shift_1',
-#     'BUN_shift_1', 'WBC_shift_1', 'ICULOS_shift_2', 'HR_shift_2',
-#     'Temp_shift_2', 'ICULOS_shift_3', 'WBC_shift_3', 'FiO2_roll_std',
-#     'pH_roll_std', 'Calcium_roll_std', 'ICULOS', 'HR', 'Temp', 'FiO2',
-#     'BUN', 'WBC', 'Platelets'
-# ]
-# selected_CINCdat = pd.concat([processed_CINCdat[selected_features], processed_CINCdat.iloc[:,-2:]], axis=1)
-# selected_CINCdat_test = pd.concat([processed_CINCdat_test[selected_features], processed_CINCdat_test.iloc[:,-2:]], axis=1)
+selected_features = ['FiO2_cummin', 'pH_cummin', 'PaCO2_cummin', 'Calcium_cummin',
+       'FiO2_cummax', 'pH_cummax', 'ICULOS_shift_1', 'HR_shift_1',
+       'Temp_shift_1', 'FiO2_shift_1', 'BUN_shift_1', 'Creatinine_shift_1',
+       'WBC_shift_1', 'Platelets_shift_1', 'ICULOS_shift_2', 'HR_shift_2',
+       'Temp_shift_2', 'BUN_shift_2', 'Creatinine_shift_2', 'WBC_shift_2',
+       'Platelets_shift_2', 'ICULOS_shift_3', 'HR_shift_3', 'Temp_shift_3',
+       'BUN_shift_3', 'Creatinine_shift_3', 'WBC_shift_3', 'Platelets_shift_3',
+       'HR_roll_std', 'O2Sat_roll_std', 'SBP_roll_std', 'MAP_roll_std',
+       'DBP_roll_std', 'FiO2_roll_std', 'pH_roll_std', 'PaCO2_roll_std',
+       'Calcium_roll_std', 'ICULOS', 'HR', 'Temp', 'FiO2', 'BUN', 'Calcium',
+       'Creatinine', 'WBC', 'Platelets', 'Age']
+selected_CINCdat = pd.concat([processed_CINCdat[selected_features], processed_CINCdat.iloc[:,-2:]], axis=1)
+selected_CINCdat_test = pd.concat([processed_CINCdat_test[selected_features], processed_CINCdat_test.iloc[:,-2:]], axis=1)
 
-# selected_features_idx = []
-# for i in selected_features:
-#     selected_features_idx.append(processed_CINCdat.columns.get_loc(i))
-# print(selected_features_idx)
+selected_features_idx = []
+for i in selected_features:
+    selected_features_idx.append(processed_CINCdat.columns.get_loc(i))
+print(selected_features_idx)
 
 
 ## feature selection
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_selection import SelectFromModel
-estimator = RandomForestClassifier(n_estimators = 100, criterion="log_loss", max_depth=8, max_features="log2", random_state=0)
-selector = SelectFromModel(estimator=estimator).fit(processed_CINCdat.iloc[:, 0:-2], processed_CINCdat.SepsisLabel)
-idx = selector.get_support()
-selected_features = processed_CINCdat.columns[0:-2][idx]
-selected_CINCdat = pd.concat([processed_CINCdat[selected_features], processed_CINCdat.iloc[:,-2:]], axis=1)
-selected_CINCdat_test = pd.concat([processed_CINCdat_test[selected_features], processed_CINCdat_test.iloc[:,-2:]], axis=1)
-print(selected_features)
+# from sklearn.ensemble import RandomForestClassifier
+# from sklearn.feature_selection import SelectFromModel
+# estimator = RandomForestClassifier(n_estimators = 100, criterion="log_loss", max_depth=8, max_features="log2", random_state=0)
+# selector = SelectFromModel(estimator=estimator).fit(processed_CINCdat.iloc[:, 0:-2], processed_CINCdat.SepsisLabel)
+# idx = selector.get_support()
+# selected_features = processed_CINCdat.columns[0:-2][idx]
+# selected_CINCdat = pd.concat([processed_CINCdat[selected_features], processed_CINCdat.iloc[:,-2:]], axis=1)
+# selected_CINCdat_test = pd.concat([processed_CINCdat_test[selected_features], processed_CINCdat_test.iloc[:,-2:]], axis=1)
+# print(selected_features)
 
-## Save the data
-selected_CINCdat.to_pickle('selected_CINC.pickle')
-selected_CINCdat_test.to_pickle('selected_CINC_test.pickle')
+# ## Save the data
+# selected_CINCdat.to_pickle('selected_CINC.pickle')
+# selected_CINCdat_test.to_pickle('selected_CINC_test.pickle')
 

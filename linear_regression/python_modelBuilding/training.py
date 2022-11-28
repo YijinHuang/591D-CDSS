@@ -7,8 +7,8 @@ import joblib
 ## Load all the data so we can quickly combine it and explore it. 
 pfile = './CinC.pickle'
 pfile_test = './CinC_test.pickle'
-processed_pfile = 'processed_CINC.pickle'
-processed_pfile_test = 'processed_CINC_test.pickle'
+processed_pfile = 'selected_CINC.pickle'
+processed_pfile_test = 'selected_CINC_test.pickle'
 CINCdat = pd.read_pickle(pfile)
 CINCdat_test = pd.read_pickle(pfile_test)
 CINCdat_zScores = pd.read_pickle(processed_pfile)
@@ -18,7 +18,7 @@ CINCdat_test_zScores = pd.read_pickle(processed_pfile_test)
 ## Build a logistic regression using all the training data
 from sklearn.ensemble import RandomForestClassifier
 # lreg = LogisticRegression(random_state=0, max_iter=1000)
-randomForest = RandomForestClassifier(n_estimators = 100, criterion="log_loss", max_depth=8, max_features="log2", random_state=0)
+randomForest = RandomForestClassifier(n_estimators = 20, criterion="log_loss", max_depth=6, max_features="log2", random_state=0)
 data = CINCdat_zScores.loc[:, ~CINCdat_zScores.columns.isin(['SepsisLabel', 'patient']) ]
 testData = CINCdat_test_zScores.loc[:, ~CINCdat_test_zScores.columns.isin(['SepsisLabel', 'patient']) ]
 testLabels = CINCdat_test_zScores.SepsisLabel
