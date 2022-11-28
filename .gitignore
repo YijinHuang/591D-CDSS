@@ -1,4 +1,3 @@
-*.model
 *.pickle
 *.csv
 __pycache__
