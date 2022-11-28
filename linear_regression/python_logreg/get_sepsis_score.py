@@ -3,6 +3,7 @@
 import numpy as np
 
 def get_sepsis_score(data, model):
+    print(data.shape)
     x_mean = np.array([ 
    22.99,  85.11,  97.13,  36.86, 122.36,  81.77,  63.23,  18.94,  -0.46,   0.49,
    7.39,  40.63,  23.76,   7.82,   1.59, 130.87,   2.05,   4.15,  31.17,  10.38,

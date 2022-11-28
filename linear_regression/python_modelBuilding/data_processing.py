@@ -20,12 +20,12 @@ def add_diff_features(df):
     return df_diff
 
 def add_lag_features(df):
-    df_lag = df.groupby('patient').shift(1).iloc[:,1:-3]
+    df_lag = df.groupby('patient').shift(1).iloc[:,0:-3]
     df_lag.columns = [str(col) + '_lag' for col in df_lag.columns]
     return df_lag
 
 def add_cummax_features(df):
-    df_cummax = df.groupby('patient').cummax().iloc[:,1:-3]
+    df_cummax = df.groupby('patient').shift(1).cummax().iloc[:,1:-3]
     df_cummax.columns = [str(col) + '_cummax' for col in df_cummax.columns]
     return df_cummax
 
@@ -35,7 +35,7 @@ def add_polynomial_features(df):
     return df_poly
 
 def add_cummin_features(df):
-    df_cummin = df.groupby('patient').cummin().iloc[:,1:-3]
+    df_cummin = df.groupby('patient').shift(1).cummin().iloc[:,1:-3]
     df_cummin.columns = [str(col) + '_cummin' for col in df_cummin.columns]
     return df_cummin
 
@@ -49,13 +49,22 @@ def add_missing_indicator_severe(df):
     df_missing.columns = [str(col) + '_missing' for col in df_missing.columns]
     return df_missing
 
+def add_previous_rows(df, windows=3):
+    df_shift = df.groupby('patient').transform(lambda s: s.shift(1)).iloc[:,0:-3]
+    df_shift.columns = [str(col) + '_shift_1' for col in df_shift.columns]
+    for i in range(2, windows+1):
+        shift_row = df.groupby('patient').transform(lambda s: s.shift(i)).iloc[:,0:-3]
+        shift_row.columns = [str(col) + '_shift_' + str(i) for col in shift_row.columns]
+        df_shift = pd.concat([df_shift, shift_row], axis=1)
+    return df_shift
+
 def add_rolling_mean_features(df, windows=5):
     df_roll = df.groupby('patient').transform(lambda s: s.rolling(windows, min_periods=1).mean()).iloc[:,1:-3]
     df_roll.columns = [str(col) + '_roll_mean' for col in df_roll.columns]
     return df_roll
 
 def add_rolling_std_features(df, windows=5):
-    df_roll = df.groupby('patient').transform(lambda s: s.rolling(windows, min_periods=1).std()).iloc[:,1:-3]
+    df_roll = df.groupby('patient').transform(lambda s: s.rolling(windows, min_periods=1).std(ddof=0)).iloc[:,1:-3]
     df_roll.columns = [str(col) + '_roll_std' for col in df_roll.columns]
     return df_roll
 
@@ -140,11 +149,15 @@ for c in cols:
 ## Add features
 processed_CINCdat = CINCdat_zScores.copy()
 processed_CINCdat_test = CINCdat_test_zScores.copy()
-
 CINCdat_zScores_roll_std = add_rolling_std_features(CINCdat_zScores, windows=10)
 CINCdat_test_zScores_roll_std = add_rolling_std_features(CINCdat_test_zScores, windows=10)
 processed_CINCdat = concat_features(CINCdat_zScores_roll_std, processed_CINCdat)
 processed_CINCdat_test = concat_features(CINCdat_test_zScores_roll_std, processed_CINCdat_test)
+
+CINCdat_zScores_prev = add_previous_rows(CINCdat_zScores, windows=3)
+CINCdat_test_zScores_prev = add_previous_rows(CINCdat_test_zScores, windows=3)
+processed_CINCdat = concat_features(CINCdat_zScores_prev, processed_CINCdat)
+processed_CINCdat_test = concat_features(CINCdat_test_zScores_prev, processed_CINCdat_test)
 
 CINCdat_zScores_cummax = add_cummax_features(CINCdat_zScores)
 CINCdat_test_zScores_cummax = add_cummax_features(CINCdat_test_zScores)
@@ -168,10 +181,29 @@ processed_CINCdat_test = processed_CINCdat_test.replace([np.inf, -np.inf], 0)
 processed_CINCdat.to_pickle('processed_CinC.pickle')
 processed_CINCdat_test.to_pickle('processed_CinC_test.pickle')
 
+# selected_features = ['HR_cummin', 'O2Sat_cummin', 'SBP_cummin', 'MAP_cummin', 'pH_cummin',
+#     'Calcium_cummin', 'WBC_cummin', 'Platelets_cummin', 'HR_cummax',
+#     'Temp_cummax', 'DBP_cummax', 'Resp_cummax', 'FiO2_cummax', 'pH_cummax',
+#     'BUN_cummax', 'Calcium_cummax', 'Creatinine_cummax', 'WBC_cummax',
+#     'Platelets_cummax', 'ICULOS_shift_1', 'HR_shift_1', 'Temp_shift_1',
+#     'BUN_shift_1', 'WBC_shift_1', 'ICULOS_shift_2', 'HR_shift_2',
+#     'Temp_shift_2', 'ICULOS_shift_3', 'WBC_shift_3', 'FiO2_roll_std',
+#     'pH_roll_std', 'Calcium_roll_std', 'ICULOS', 'HR', 'Temp', 'FiO2',
+#     'BUN', 'WBC', 'Platelets'
+# ]
+# selected_CINCdat = pd.concat([processed_CINCdat[selected_features], processed_CINCdat.iloc[:,-2:]], axis=1)
+# selected_CINCdat_test = pd.concat([processed_CINCdat_test[selected_features], processed_CINCdat_test.iloc[:,-2:]], axis=1)
+
+# selected_features_idx = []
+# for i in selected_features:
+#     selected_features_idx.append(processed_CINCdat.columns.get_loc(i))
+# print(selected_features_idx)
+
+
 ## feature selection
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFromModel
-estimator = RandomForestClassifier(n_estimators = 100, criterion="log_loss", max_depth=8, max_features="log2")
+estimator = RandomForestClassifier(n_estimators = 100, criterion="log_loss", max_depth=8, max_features="log2", random_state=0)
 selector = SelectFromModel(estimator=estimator).fit(processed_CINCdat.iloc[:, 0:-2], processed_CINCdat.SepsisLabel)
 idx = selector.get_support()
 selected_features = processed_CINCdat.columns[0:-2][idx]
