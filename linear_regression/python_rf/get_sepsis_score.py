@@ -51,7 +51,7 @@ def add_previous_rows_np(data, windows=3):
     return data_shift
 
 def add_rolling_std_features_np(data, windows=10):
-    data_roll = data[-windows:].std(axis=0, ddof=0)
+    data_roll = np.nanstd(data[-windows:], axis=0, ddof=0)
     return data_roll
 
 def is_valid_index(data, index):
